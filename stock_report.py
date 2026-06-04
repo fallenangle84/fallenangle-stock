@@ -459,8 +459,7 @@ def main():
     # 1. 检查交易时段
     is_trading, time_str = check_trading_hours()
     if not is_trading:
-        print(f"[INFO] 非交易时段 ({time_str})，跳过执行")
-        return
+        print(f"[INFO] 非交易时段 ({time_str})，将使用最新可用数据生成播报")
 
     # 2. 查询行情
     print("[INFO] 正在查询行情...")
