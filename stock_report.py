@@ -4,6 +4,7 @@
 A股持仓播报 - GitHub Actions 版
 查询实时行情 → 生成图片 → 推送企业微信
 数据源：新浪财经API（免费，无需认证）
+自动推送：交易日 9:30-15:00 每半小时 (GitHub Actions cron)
 """
 
 from PIL import Image, ImageDraw, ImageFont
