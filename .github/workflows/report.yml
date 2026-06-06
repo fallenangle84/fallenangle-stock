@@ -14,6 +14,8 @@ on:
     - cron: '0,30 6 * * 1-5'
     # Beijing 15:00 (UTC 07:00)
     - cron: '0 7 * * 1-5'
+    # Beijing 15:30 (UTC 07:30)
+    - cron: '30 7 * * 1-5'
   workflow_dispatch:
 
 jobs:
