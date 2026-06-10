@@ -1,5 +1,4 @@
 name: Stock Report
-
 on:
   schedule:
     # Beijing 09:30 (UTC 01:30)
@@ -22,7 +21,6 @@ jobs:
   report:
     runs-on: ubuntu-latest
     timeout-minutes: 5
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
