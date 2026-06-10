@@ -50,7 +50,6 @@ def check_trading_hours():
 
 def query_sina(codes):
     """通过新浪财经API查询实时行情"""
-    # 新浪代码格式：sh600xxx(沪), sz000xxx/sz300xxx(深)
     sina_codes = []
     for c in codes:
         if c.startswith("6"):
@@ -73,12 +72,12 @@ def query_sina(codes):
         m = re.match(r'var hq_str_(\w+)="(.*)";', line.strip())
         if not m:
             continue
-        raw_code = m.group(1)  # sh603629
+        raw_code = m.group(1)
         data = m.group(2).split(",")
         if len(data) < 10:
             continue
 
-        stock_code = raw_code[2:]  # 603629
+        stock_code = raw_code[2:]
         results[stock_code] = {
             "name": data[0],
             "open": float(data[1]) if data[1] else 0,
@@ -155,7 +154,6 @@ def fetch_stock_data(holdings):
 # ========== 字体加载 ==========
 _font_cache = {}
 
-
 def load_font(size):
     """加载中文字体，优先系统字体"""
     if size in _font_cache:
@@ -181,7 +179,6 @@ def load_font(size):
             "/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttc",
         ]
 
-    # 尝试系统字体
     for path in candidates:
         if os.path.exists(path):
             try:
@@ -191,7 +188,6 @@ def load_font(size):
             except Exception:
                 continue
 
-    # 最终兜底
     try:
         font = ImageFont.load_default(size=size)
     except TypeError:
@@ -202,7 +198,6 @@ def load_font(size):
 
 def generate_report_image(stocks_data, time_str, is_trading):
     """生成持仓播报图片"""
-    # 合并数据
     stocks = []
     for h in HOLDINGS:
         code = h["code"]
@@ -220,7 +215,6 @@ def generate_report_image(stocks_data, time_str, is_trading):
             "change_pct": change_pct,
         })
 
-    # 计算汇总
     total_market_value = 0
     total_cost = 0
     total_profit = 0
@@ -238,7 +232,6 @@ def generate_report_image(stocks_data, time_str, is_trading):
         today_profit += s["day_profit"]
     total_profit_pct = total_profit / total_cost * 100 if total_cost > 0 else 0
 
-    # ========== 2倍分辨率绘图 ==========
     SCALE = 2
     W_LOGICAL = 720
     W = W_LOGICAL * SCALE
@@ -255,7 +248,6 @@ def generate_report_image(stocks_data, time_str, is_trading):
     N = len(stocks)
     H = PAD_L + TITLE_H + NOTICE_H + HEADER_H + ROW_H * N + 12 * SCALE + SUMMARY_H + FOOTER_H + PAD_L
 
-    # 浅色主题配色
     BG_WHITE = (248, 249, 252)
     BG_CARD = (255, 255, 255)
     HEADER_BG = (58, 78, 128)
@@ -273,7 +265,6 @@ def generate_report_image(stocks_data, time_str, is_trading):
     img = Image.new("RGB", (W, H), BG_WHITE)
     draw = ImageDraw.Draw(img)
 
-    # 字体
     font_title = load_font(22 * SCALE)
     font_header = load_font(13 * SCALE)
     font_cell = load_font(14 * SCALE)
@@ -286,20 +277,17 @@ def generate_report_image(stocks_data, time_str, is_trading):
 
     y = PAD_L
 
-    # 标题区
     draw.rectangle([TBL_X, y + 4 * SCALE, TBL_X + 5 * SCALE, y + TITLE_H - 4 * SCALE], fill=GOLD)
     draw.text((TBL_X + 16 * SCALE, y + TITLE_H // 2), "持仓播报", fill=TEXT_MAIN, font=font_title, anchor="lm")
     draw.text((W - PAD_R, y + TITLE_H // 2), time_str, fill=TEXT_SEC, font=font_cell, anchor="rm")
     y += TITLE_H
 
-    # 交易时段提示
     if is_trading:
         draw.text((TBL_X, y + NOTICE_H // 2), "交易时段 · 实时数据", fill=(30, 132, 60), font=font_small, anchor="lm")
     else:
         draw.text((TBL_X, y + NOTICE_H // 2), "非交易时段 · 数据为最近收盘价", fill=(180, 140, 30), font=font_small, anchor="lm")
     y += NOTICE_H + 8 * SCALE
 
-    # 列定义
     col_defs = [
         ("code_name", 0.15),
         ("hold",      0.07),
@@ -316,14 +304,12 @@ def generate_report_image(stocks_data, time_str, is_trading):
     for cw in col_ws[:-1]:
         col_xs.append(col_xs[-1] + cw)
 
-    # 表头
     draw.rounded_rectangle([TBL_X, y, TBL_X + TBL_W, y + HEADER_H], radius=8 * SCALE, fill=HEADER_BG)
     headers_cn = ["代码/名称", "持有", "成本价", "现价", "市值", "涨跌幅", "当日盈亏", "持仓盈亏"]
     for i, (hdr, cx, cw) in enumerate(zip(headers_cn, col_xs, col_ws)):
         draw.text((cx + cw // 2, y + HEADER_H // 2), hdr, fill=HEADER_TEXT, font=font_header, anchor="mm")
     y += HEADER_H
 
-    # 数据行
     for idx, s in enumerate(stocks):
         row_y = y
         bg = BG_CARD if idx % 2 == 0 else (243, 244, 248)
@@ -342,35 +328,19 @@ def generate_report_image(stocks_data, time_str, is_trading):
             sign = "+" if v > 0 else ""
             return f"{sign}{v:,.0f}元"
 
-        # 列0: 代码/名称
         draw.text((col_xs[0] + 8 * SCALE, cy - 10 * SCALE), s["code"], fill=TEXT_MAIN, font=font_cell, anchor="lm")
         draw.text((col_xs[0] + 8 * SCALE, cy + 10 * SCALE), s["name"], fill=TEXT_SEC, font=font_cell_name, anchor="lm")
-
-        # 列1: 持有
         draw.text((col_xs[1] + col_ws[1] // 2, cy), f"{s['hold']}股", fill=TEXT_MAIN, font=font_cell, anchor="mm")
-
-        # 列2: 成本价
         draw.text((col_xs[2] + col_ws[2] // 2, cy), f"{s['cost']:.2f}", fill=TEXT_MAIN, font=font_cell, anchor="mm")
-
-        # 列3: 现价
         draw.text((col_xs[3] + col_ws[3] // 2, cy), f"{s['price']:.2f}", fill=TEXT_MAIN, font=font_cell_bold, anchor="mm")
-
-        # 列4: 市值
         draw.text((col_xs[4] + col_ws[4] // 2, cy), f"{s['mv']:,.0f}元", fill=TEXT_MAIN, font=font_cell, anchor="mm")
-
-        # 列5: 涨跌幅
         draw.text((col_xs[5] + col_ws[5] // 2, cy), f"{s1}{s['change_pct']:.2f}%", fill=c_chg, font=font_cell_bold, anchor="mm")
-
-        # 列6: 当日盈亏
         draw.text((col_xs[6] + col_ws[6] // 2, cy), fmt_money(s["day_profit"]), fill=c_day, font=font_cell, anchor="mm")
-
-        # 列7: 持仓盈亏
         draw.text((col_xs[7] + col_ws[7] // 2, cy - 10 * SCALE), fmt_money(s["profit_amt"]), fill=c_pnl, font=font_cell_bold, anchor="mm")
         draw.text((col_xs[7] + col_ws[7] // 2, cy + 10 * SCALE), f"({s2}{s['profit_pct']:.2f}%)", fill=c_pnl, font=font_small, anchor="mm")
 
         y += ROW_H
 
-    # 汇总区
     y += 8 * SCALE
     card_h = SUMMARY_H
     draw.rounded_rectangle([TBL_X, y, TBL_X + TBL_W, y + card_h], radius=10 * SCALE, fill=SUMMARY_BG, outline=SUMMARY_BORDER, width=2)
@@ -381,27 +351,22 @@ def generate_report_image(stocks_data, time_str, is_trading):
     s_sign = "+" if total_profit > 0 else ""
     t_sign = "+" if today_profit > 0 else ""
 
-    # 第一行：今日总盈亏
     draw.text((TBL_X + 20 * SCALE, cy_start), "今日总盈亏", fill=TEXT_SEC, font=font_summary_label, anchor="lm")
     draw.text((W - PAD_R - 20 * SCALE, cy_start), f"{t_sign}{today_profit:,.0f}元", fill=t_color, font=font_summary_val, anchor="rm")
     cy_start += 26 * SCALE
 
-    # 第二行：持仓总盈亏（百分比同行）
     draw.text((TBL_X + 20 * SCALE, cy_start), "持仓总盈亏", fill=TEXT_SEC, font=font_summary_label, anchor="lm")
     pnl_full = f"{s_sign}{total_profit:,.0f}元 ({s_sign}{total_profit_pct:.2f}%)"
     draw.text((W - PAD_R - 20 * SCALE, cy_start), pnl_full, fill=s_color, font=font_summary_val_big, anchor="rm")
     cy_start += 26 * SCALE
 
-    # 第三行：总市值 / 总成本
     draw.text((TBL_X + 20 * SCALE, cy_start), "总市值 / 总成本", fill=TEXT_SEC, font=font_summary_label, anchor="lm")
     draw.text((W - PAD_R - 20 * SCALE, cy_start), f"{total_market_value:,.0f}元 / {total_cost:,.0f}元", fill=TEXT_MAIN, font=font_summary_val, anchor="rm")
 
     y += card_h + 6 * SCALE
 
-    # 底部
     draw.text((W // 2, y), "Sina Finance", fill=(170, 175, 195), font=font_small, anchor="mm")
 
-    # 保存图片
     buf = io.BytesIO()
     img.save(buf, format="PNG")
     buf.seek(0)
@@ -411,7 +376,6 @@ def generate_report_image(stocks_data, time_str, is_trading):
 
     print(f"[OK] 图片生成: {W}x{H}, base64={len(img_b64)} bytes")
 
-    # 保存本地（调试用）
     try:
         img.save("report.png")
         print("[OK] 已保存 report.png")
@@ -457,11 +421,10 @@ def main():
     print(f"=== A股持仓播报 ===")
     print(f"时间: {datetime.now(BJT).strftime('%Y-%m-%d %H:%M:%S')} (北京时间)")
 
-    # 1. 检查交易时段
+    # 1. 检查交易时段（用于图片标注，不跳过执行）
     is_trading, time_str = check_trading_hours()
-    if not is_trading:
-        print(f"[INFO] 非交易时段 ({time_str})，跳过执行")
-        return
+    print(f"[INFO] 交易时段检查: {time_str}, is_trading={is_trading}")
+
     # 2. 查询行情
     print("[INFO] 正在查询行情...")
     stocks_data = fetch_stock_data(HOLDINGS)
