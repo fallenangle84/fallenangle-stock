@@ -19,13 +19,15 @@ import urllib.request
 from datetime import datetime, timezone, timedelta
 
 # ========== 配置区 ==========
-# 持仓列表（修改此处即可更新）
-HOLDINGS = [
-    {"code": "301018", "name": "申菱环境", "hold": 600,  "cost": 101.40},
-    {"code": "002463", "name": "沪电股份", "hold": 400,  "cost": 128.00},
-    {"code": "300623", "name": "捷捷微电", "hold": 2000, "cost": 36.75},
-    {"code": "600522", "name": "中天科技", "hold": 1200, "cost": 52.86},
-]
+# 持仓列表从 holdings.json 读取（修改 holdings.json 即可更新持仓）
+def load_holdings():
+    """从 holdings.json 加载持仓配置"""
+    try:
+        with open("holdings.json", "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"[ERROR] 读取 holdings.json 失败: {e}")
+        sys.exit(1)
 
 # 企业微信 Webhook（从环境变量读取，也可直接填入）
 WECOM_WEBHOOK = os.environ.get("WECOM_WEBHOOK", "")
@@ -196,10 +198,10 @@ def load_font(size):
     return font
 
 
-def generate_report_image(stocks_data, time_str, is_trading):
+def generate_report_image(stocks_data, time_str, is_trading, holdings):
     """生成持仓播报图片"""
     stocks = []
-    for h in HOLDINGS:
+    for h in holdings:
         code = h["code"]
         d = stocks_data.get(code, {})
         price = d.get("current", 0)
@@ -421,25 +423,29 @@ def main():
     print(f"=== A股持仓播报 ===")
     print(f"时间: {datetime.now(BJT).strftime('%Y-%m-%d %H:%M:%S')} (北京时间)")
 
+    # 0. 加载持仓配置
+    holdings = load_holdings()
+    print(f"[INFO] 持仓加载成功，共 {len(holdings)} 只股票")
+
     # 1. 检查交易时段（用于图片标注，不跳过执行）
     is_trading, time_str = check_trading_hours()
     print(f"[INFO] 交易时段检查: {time_str}, is_trading={is_trading}")
 
     # 2. 查询行情
     print("[INFO] 正在查询行情...")
-    stocks_data = fetch_stock_data(HOLDINGS)
+    stocks_data = fetch_stock_data(holdings)
     if not stocks_data:
         print("[ERROR] 行情查询全部失败，终止执行")
         sys.exit(1)
 
-    for h in HOLDINGS:
+    for h in holdings:
         d = stocks_data.get(h["code"], {})
         print(f"  {h['name']}({h['code']}): 现价={d.get('current', 'N/A')}, 昨收={d.get('yesterday_close', 'N/A')}")
 
     # 3. 生成图片
     print("[INFO] 正在生成播报图片...")
     try:
-        img_b64, img_md5 = generate_report_image(stocks_data, time_str, is_trading)
+        img_b64, img_md5 = generate_report_image(stocks_data, time_str, is_trading, holdings)
     except Exception as e:
         print(f"[ERROR] 图片生成失败: {e}")
         import traceback
