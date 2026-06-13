@@ -1,4 +1,5 @@
 name: Stock Report
+
 on:
   schedule:
     # Beijing 09:30 (UTC 01:30)
