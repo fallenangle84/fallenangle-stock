@@ -427,9 +427,12 @@ def main():
     holdings = load_holdings()
     print(f"[INFO] 持仓加载成功，共 {len(holdings)} 只股票")
 
-    # 1. 检查交易时段（用于图片标注，不跳过执行）
+    # 1. 检查交易时段（非交易时段直接退出，不推送）
     is_trading, time_str = check_trading_hours()
     print(f"[INFO] 交易时段检查: {time_str}, is_trading={is_trading}")
+    if not is_trading:
+        print(f"[INFO] 非交易时段 ({time_str})，跳过推送")
+        sys.exit(0)
 
     # 2. 查询行情
     print("[INFO] 正在查询行情...")
