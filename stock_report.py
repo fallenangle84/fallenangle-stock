@@ -427,11 +427,16 @@ def main():
     holdings = load_holdings()
     print(f"[INFO] 持仓加载成功，共 {len(holdings)} 只股票")
 
-    # 1. 检查交易时段（非交易时段直接退出，不推送）
+    # 1. 检查触发方式（手动触发不受交易时段限制）
+    event_name = os.environ.get("GITHUB_EVENT_NAME", "unknown")
+    is_manual = event_name == "workflow_dispatch"
+    print(f"[INFO] 触发方式: {event_name}，手动触发={is_manual}")
+
+    # 2. 检查交易时段（仅定时任务在非交易时段跳过）
     is_trading, time_str = check_trading_hours()
     print(f"[INFO] 交易时段检查: {time_str}, is_trading={is_trading}")
-    if not is_trading:
-        print(f"[INFO] 非交易时段 ({time_str})，跳过推送")
+    if not is_trading and not is_manual:
+        print(f"[INFO] 非交易时段 ({time_str})，且非手动触发，跳过推送")
         sys.exit(0)
 
     # 2. 查询行情
