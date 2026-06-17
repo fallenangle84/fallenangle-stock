@@ -45,7 +45,7 @@ def check_trading_hours():
 
     if weekday >= 5:  # 周末
         return False, time_str
-    if (930 <= t <= 1130) or (1300 <= t <= 1535):
+    if (925 <= t <= 1135) or (1255 <= t <= 1545):
         return True, time_str
     return False, time_str
 
